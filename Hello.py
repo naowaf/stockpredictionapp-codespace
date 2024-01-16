@@ -5,47 +5,93 @@
 # You may obtain a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import streamlit as st
-from streamlit.logger import get_logger
+import yfinance as yf
+from prophet import Prophet
+import pandas as pd
+import plotly.graph_objects as go
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
-LOGGER = get_logger(__name__)
+# Input pengguna untuk simbol saham
+simbol = st.sidebar.text_input("Masukkan simbol saham (contoh: BBCA.jk catatan: tambahkan simbol .jk setelah simbol jika ingin menampilkan saham indonesia):", "NVDA")
 
+# Input pengguna untuk tanggal awal dan akhir
+tanggal_awal = st.sidebar.date_input("Pilih tanggal awal:", pd.to_datetime('1999-03-01'))
+tanggal_akhir = st.sidebar.date_input("Pilih tanggal akhir:", pd.to_datetime('2022-12-31'))
 
-def run():
-    st.set_page_config(
-        page_title="Hello",
-        page_icon="👋",
+# Input pengguna untuk periode dataframe masa depan (dalam tahun)
+periode_masa_depan_tahun = st.sidebar.slider("Pilih periode masa depan (tahun):", 1, 5, 1)
+
+# Konversi tahun menjadi hari
+periode_masa_depan_hari = periode_masa_depan_tahun * 365
+
+# Ambil data saham menggunakan Yahoo Finance
+data = yf.download(simbol, start=tanggal_awal, end=tanggal_akhir)
+
+# Periksa apakah data tersedia
+if data.empty:
+    st.error("Tidak ada data yang tersedia untuk simbol saham dan rentang tanggal yang dipilih. Harap sesuaikan masukan.")
+else:
+    # Anggap 'data' adalah DataFrame dengan kolom 'Date' dan 'Close'
+    df = data.reset_index()[['Date', 'Close']]
+    df.columns = ['ds', 'y']
+
+    # Konversi kolom 'ds' ke format datetime
+    df['ds'] = pd.to_datetime(df['ds'])
+
+    # Urutkan DataFrame berdasarkan kolom 'ds'
+    df = df.sort_values(by='ds')
+
+    # Buat dan latih model Prophet
+    m = Prophet().fit(df)
+
+    # Buat dataframe masa depan untuk prediksi
+    masa_depan = m.make_future_dataframe(periods=periode_masa_depan_hari)
+
+    # Prediksi nilai
+    prediksi = m.predict(masa_depan)
+
+    # Hitung metrik akurasi
+    df_eval = pd.merge(df, prediksi[['ds', 'yhat']], on='ds', how='inner')
+    mae = mean_absolute_error(df_eval['y'], df_eval['yhat'])
+    mse = mean_squared_error(df_eval['y'], df_eval['yhat'])
+    rmse = mean_squared_error(df_eval['y'], df_eval['yhat'], squared=False)
+    mape = (abs(df_eval['y'] - df_eval['yhat']) / df_eval['y']).mean() * 100
+    r_squared = r2_score(df_eval['y'], df_eval['yhat'])
+
+    # Buat aplikasi Streamlit dan tampilkan data
+    st.title('Aplikasi Prediksi Saham')
+
+    st.subheader('Data Saham')
+    nama_perusahaan = yf.Ticker(simbol).info['longName']
+    st.write("Nama Perusahaan:", nama_perusahaan)
+
+    # Tampilkan data sebelumnya berdasarkan tanggal awal dan akhir yang dipilih
+    st.write("Rentang Data Terpilih:")
+    st.write(data)
+
+    st.subheader('Data Prediksi')
+
+    # Plot data yang diprediksi dan data aktual menggunakan plotly
+    fig = go.Figure()
+
+    fig.add_trace(go.Scatter(x=prediksi['ds'], y=prediksi['yhat'], mode='lines', name='prediksi'))
+    fig.add_trace(go.Scatter(x=df['ds'], y=df['y'], mode='lines', name='aktual'))
+
+    fig.update_layout(
+        title='Data Prediksi vs Aktual',
+        xaxis_title='Tanggal',
+        yaxis_title='Harga Saham',
+        legend_title='Jenis Data',
     )
 
-    st.write("# Welcome to Streamlit! 👋")
+    st.plotly_chart(fig)
 
-    st.sidebar.success("Select a demo above.")
+    st.subheader('Metrik Akurasi')
 
-    st.markdown(
-        """
-        Streamlit is an open-source app framework built specifically for
-        Machine Learning and Data Science projects.
-        **👈 Select a demo from the sidebar** to see some examples
-        of what Streamlit can do!
-        ### Want to learn more?
-        - Check out [streamlit.io](https://streamlit.io)
-        - Jump into our [documentation](https://docs.streamlit.io)
-        - Ask a question in our [community
-          forums](https://discuss.streamlit.io)
-        ### See more complex demos
-        - Use a neural net to [analyze the Udacity Self-driving Car Image
-          Dataset](https://github.com/streamlit/demo-self-driving)
-        - Explore a [New York City rideshare dataset](https://github.com/streamlit/demo-uber-nyc-pickups)
-    """
-    )
-
-
-if __name__ == "__main__":
-    run()
+    # Tampilkan metrik akurasi dengan penjelasan
+    st.write('Mean Absolute Error (MAE): {:.2f}'.format(mae))
+    st.write('Mean Squared Error (MSE): {:.2f}'.format(mse))
+    st.write('Root Mean Squared Error (RMSE): {:.2f}'.format(rmse))
+    st.write('Mean Absolute Percentage Error (MAPE): {:.2f}%'.format(mape))
+    st.write('R-squared (R2): {:.2f}'.format(r_squared))
