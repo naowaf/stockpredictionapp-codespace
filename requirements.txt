@@ -8,4 +8,6 @@ prophet
 pandas
 plotly
 scikit-learn
+matplotlib
+setuptools
 neuralprophet
