@@ -9,3 +9,5 @@ pandas
 plotly
 scikit-learn
 sklearn
+setuptools
+neuralprophet
