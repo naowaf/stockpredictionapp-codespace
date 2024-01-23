@@ -64,4 +64,4 @@ jobs:
         with:
           app-name: 'stockprediction-nawaf'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_79E7A53B60784181BE5680E84B1FEAD1 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_6CFED09C91B1401B9CA6D1DD31BD4EF8 }}
