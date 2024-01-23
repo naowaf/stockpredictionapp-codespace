@@ -1,12 +1,6 @@
-altair
-numpy
-pandas
-pydeck
-streamlit
-yfinance
-prophet
-pandas
-plotly
+streamlit #==<version_number>   Replace <version_number> with the desired version
+yfinance #==<version_number>    Replace <version_number> with the desired version
+prophet #==<version_number>     Replace <version_number> with the desired version
+pandas #==<version_number>      Replace <version_number> with the desired version
+plotly #==<version_number>      Replace <version_number> with the desired version
 scikit-learn
-matplotlib
-setuptools

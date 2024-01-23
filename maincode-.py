@@ -5,6 +5,13 @@
 # You may obtain a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
 import streamlit as st
 import yfinance as yf
 from prophet import Prophet
@@ -95,3 +102,4 @@ else:
     st.write('Root Mean Squared Error (RMSE): {:.2f}'.format(rmse))
     st.write('Mean Absolute Percentage Error (MAPE): {:.2f}%'.format(mape))
     st.write('R-squared (R2): {:.2f}'.format(r_squared))
+
